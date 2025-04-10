@@ -479,7 +479,7 @@ class DSFD( nn.Module ) :
 			print( 'Loading weights into state dict...' )
 			mdata = torch.load( base_file , map_location = lambda storage , loc : storage )
 			
-			epoch = 0
+			epoch = 1
 			self.load_state_dict( mdata )
 			print( 'Finished!' )
 		else :
