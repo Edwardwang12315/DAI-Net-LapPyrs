@@ -36,7 +36,7 @@ parser.add_argument('--model',
                     choices=['dark', 'vgg', 'resnet50', 'resnet101', 'resnet152'],
                     help='model for training')
 parser.add_argument('--resume',
-                    default='../model/forDAINet/dark/dsfd.pth', type=str,
+                    default=None, type=str, # '../model/forDAINet/dark/dsfd.pth'
                     help='Checkpoint state_dict file to resume training from')
 parser.add_argument('--num_workers',
                     default=0, type=int,
@@ -45,7 +45,7 @@ parser.add_argument('--cuda',
                     default=True, type=bool,
                     help='Use CUDA to train model')
 parser.add_argument('--lr', '--learning-rate',
-                    default=5e-4, type=float,
+                    default=5e-5, type=float,
                     help='initial learning rate')
 parser.add_argument('--momentum',
                     default=0.9, type=float,
@@ -134,13 +134,14 @@ def train():
         if local_rank == 0:
             print('Resuming training, loading {}...'.format(args.resume))
         start_epoch = net.load_weights(args.resume)
-        iteration = 6400
+        iteration = 51500
     else:
         base_weights = torch.load(args.save_folder + basenet)
         if local_rank == 0:
             print('Load base network {}'.format(args.save_folder + basenet))
         if args.model == 'vgg' or args.model == 'dark':
-            net.vgg.load_state_dict(base_weights)
+            load_from_pretrained(net.vgg, base_weights)
+            # net.vgg.load_state_dict(base_weights)
         else:
             net.resnet.load_state_dict(base_weights)
     if not args.resume:
@@ -275,8 +276,7 @@ def train():
                 if local_rank == 0:
                     print('Saving state, iter:', iteration)
                     file = 'dsfd_' + repr(iteration) + '.pth'
-                    torch.save(dsfd_net.state_dict(),
-                               os.path.join(save_folder, file))
+                    torch.save(dsfd_net.state_dict(), os.path.join(save_folder, file))
             iteration += 1
         # if local_rank == 0:
         if (epoch + 1) >= 0:
@@ -295,11 +295,11 @@ def val(epoch, net, dsfd_net, criterion):
     for batch_idx, (images, targets, img_paths) in enumerate(val_loader):
         if args.cuda:
             images = Variable(images.cuda() / 255.)
-            targets = [Variable(ann.cuda(), volatile=True)
+            targets = [Variable(ann.cuda(), requires_grad=False)
                        for ann in targets]
         else:
             images = Variable(images / 255.)
-            targets = [Variable(ann, volatile=True) for ann in targets]
+            targets = [Variable(ann, requires_grad=False) for ann in targets]
         img_dark = torch.stack([Low_Illumination_Degrading(images[i])[0] for i in range(images.shape[0])],
                                dim=0)
         out, R = net.module.test_forward(img_dark)
@@ -322,8 +322,7 @@ def val(epoch, net, dsfd_net, criterion):
     if tloss < min_loss:
         if local_rank == 0:
             print('Saving best state,epoch', epoch)
-            torch.save(dsfd_net.state_dict(), os.path.join(
-                save_folder, 'dsfd.pth'))
+            torch.save(dsfd_net.state_dict(), os.path.join(save_folder, 'dsfd.pth'))
         min_loss = tloss
 
     states = {
@@ -344,6 +343,24 @@ def adjust_learning_rate(optimizer, gamma, step):
     for param_group in optimizer.param_groups:
         param_group['lr'] = param_group['lr'] * gamma
 
+from collections import OrderedDict
+def load_from_pretrained(model, load_dict):
+    # 当前模型的参数字典
+    model_dict = model.state_dict()
+    
+    # 创建一个新的OrderedDict来存储修改后的权重
+    new_dict = OrderedDict()
+    
+    key = list(model_dict.keys())
+    name = list(load_dict.keys())
+
+    for i in key:
+        if i in name:
+            new_dict[i]=load_dict[i]
+        else:
+            new_dict[i] = model_dict[i]
+    
+    model.load_state_dict( new_dict )
 
 if __name__ == '__main__':
     train()
