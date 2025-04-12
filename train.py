@@ -45,7 +45,7 @@ parser.add_argument('--cuda',
                     default=True, type=bool,
                     help='Use CUDA to train model')
 parser.add_argument('--lr', '--learning-rate',
-                    default=5e-5, type=float,
+                    default=7e-5, type=float,
                     help='initial learning rate')
 parser.add_argument('--momentum',
                     default=0.9, type=float,
@@ -140,8 +140,8 @@ def train():
         if local_rank == 0:
             print('Load base network {}'.format(args.save_folder + basenet))
         if args.model == 'vgg' or args.model == 'dark':
-            load_from_pretrained(net.vgg, base_weights)
-            # net.vgg.load_state_dict(base_weights)
+            # load_from_pretrained(net.vgg, base_weights)
+            net.vgg.load_state_dict(base_weights)
         else:
             net.resnet.load_state_dict(base_weights)
     if not args.resume:

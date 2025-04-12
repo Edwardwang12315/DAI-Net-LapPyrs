@@ -197,10 +197,10 @@ class DSFD( nn.Module ) :
 		loc_pal2 = list()
 		conf_pal2 = list()
 		
-		for k in range( 23 ) :  # 加入BN后为： 23  否则为 16
+		for k in range( 16 ) :  # 加入BN后为： 23  否则为 16
 			x = self.vgg[ k ]( x )
 			# x检测通路的输入
-			if k == 6 :  # 加入BN后为： 6  否则为 4
+			if k == 4 :  # 加入BN后为： 6  否则为 4
 				x_dark = x  # xlight、xdark分解通路的输入
 		
 		HF_dark_decoder = self.HF( x_dark )
@@ -226,19 +226,19 @@ class DSFD( nn.Module ) :
 		s = self.L2Normof1( of1 )
 		pal1_sources.append( s )
 		# apply vgg up to fc7
-		for k in range( 23 , 33 ) :  # 加入BN后为： 23,33  否则为 16 , 23
+		for k in range( 16 , 23 ) :  # 加入BN后为： 23,33  否则为 16 , 23
 			x = self.vgg[ k ]( x )
 		of2 = x
 		s = self.L2Normof2( of2 )
 		pal1_sources.append( s )
 		
-		for k in range( 33 , 43 ) :  # 加入BN后为： 33 , 43  否则为 23 , 30
+		for k in range( 23 , 30 ) :  # 加入BN后为： 33 , 43  否则为 23 , 30
 			x = self.vgg[ k ]( x )
 		of3 = x
 		s = self.L2Normof3( of3 )
 		pal1_sources.append( s )
 		
-		for k in range( 43 , len( self.vgg ) ) :  # 加入BN后为：43  否则为 30
+		for k in range( 30 , len( self.vgg ) ) :  # 加入BN后为：43  否则为 30
 			x = self.vgg[ k ]( x )
 		of4 = x
 		pal1_sources.append( of4 )
@@ -333,13 +333,13 @@ class DSFD( nn.Module ) :
 		
 		# apply vgg up to conv4_3 relu
 		# x输入暗图 xlight输入亮图
-		for k in range( 7 ) : # 加入BN后为： 7  否则为 5
+		for k in range( 5 ) : # 加入BN后为： 7  否则为 5
 			x_light = self.vgg[ k ]( x_light )
 		
-		for k in range( 23 ) : # 加入BN后为： 23  否则为 16
+		for k in range( 16 ) : # 加入BN后为： 23  否则为 16
 			x = self.vgg[ k ]( x )
 			# x检测通路的输入
-			if k == 6 :  # 加入BN后为： 6  否则为 4
+			if k == 4 :  # 加入BN后为： 6  否则为 4
 				x_dark = x  # xlight、xdark分解通路的输入
 		
 		HF_dark_decoder = self.HF( x_dark )
@@ -351,9 +351,9 @@ class DSFD( nn.Module ) :
 		x_dark_recon = self.Lap.pyramid_recons(HF_light_decoder , LF_dark_Lap).detach()
 		x_light_recon = self.Lap.pyramid_recons(HF_dark_decoder , LF_light_Lap).detach()
 		
-		for k in range( 7 ) :  # 加入BN后为： 7  否则为 5
+		for k in range( 5 ) :  # 加入BN后为： 7  否则为 5
 			x_light_recon = self.vgg[ k ]( x_light_recon )
-		for k in range( 7 ) :  # 加入BN后为： 7  否则为 5
+		for k in range( 5 ) :  # 加入BN后为： 7  否则为 5
 			x_dark_recon = self.vgg[ k ]( x_dark_recon )
 		
 		# Redecomposition
@@ -374,19 +374,19 @@ class DSFD( nn.Module ) :
 		s = self.L2Normof1( of1 )
 		pal1_sources.append( s )
 		# apply vgg up to fc7
-		for k in range(  23,33 ) :  # 加入BN后为： 23,33  否则为 16 , 23
+		for k in range(  16 , 23 ) :  # 加入BN后为： 23,33  否则为 16 , 23
 			x = self.vgg[ k ]( x )
 		of2 = x
 		s = self.L2Normof2( of2 )
 		pal1_sources.append( s )
 		
-		for k in range( 33 , 43 ) :  # 加入BN后为： 33 , 43  否则为 23 , 30
+		for k in range( 23 , 30 ) :  # 加入BN后为： 33 , 43  否则为 23 , 30
 			x = self.vgg[ k ]( x )
 		of3 = x
 		s = self.L2Normof3( of3 )
 		pal1_sources.append( s )
 		
-		for k in range( 43 , len( self.vgg ) ) : # 加入BN后为：43  否则为 30
+		for k in range( 30 , len( self.vgg ) ) : # 加入BN后为：43  否则为 30
 			x = self.vgg[ k ]( x )
 		of4 = x
 		pal1_sources.append( of4 )
@@ -537,7 +537,7 @@ def fem_module( cfg ) :
 	return (topdown_layers , lat_layers , fem_layers)
 
 
-def vgg( cfg , i , batch_norm = True ) : # 修改后，vgg的索引应该修改
+def vgg( cfg , i , batch_norm = False ) : # 修改后，vgg的索引应该修改
 	layers = [ ]
 	in_channels = i
 	for v in cfg :
@@ -578,7 +578,7 @@ def multibox( vgg , extra_layers , num_classes ) :
 	loc_layers = [ ]
 	conf_layers = [ ]
 	# 分别对应 最后三个block的最后conv输出和vgg最后一个卷积输出
-	vgg_source = [ 20 , 30 , 40 , -2 ] # 不加BN为： 14 , 21 , 28 , -2
+	vgg_source = [ 14 , 21 , 28 , -2 ] # 不加BN为： 14 , 21 , 28 , -2
 	
 	for k , v in enumerate( vgg_source ) :
 		loc_layers += [ nn.Conv2d( vgg[ v ].out_channels , 4 , kernel_size = 3 , padding = 1 ) ]
